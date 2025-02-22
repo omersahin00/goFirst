@@ -2,9 +2,8 @@ package main
 
 import (
 	"errors"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type todo struct {
@@ -19,31 +18,18 @@ var todos = []todo{
 	{ID: "3", Item: "Record video", Complated: false},
 }
 
-func getTodos(context *gin.Context) {
-	context.IndentedJSON(http.StatusOK, todos)
+func getTodos(context *fiber.Ctx) error {
+	return context.JSON(todos)
 }
 
-func addTodo(context *gin.Context) {
+func addTodo(context *fiber.Ctx) error {
 	var newTodo todo
-	if err := context.BindJSON(&newTodo); err != nil {
-		return
+	if err := context.BodyParser(&newTodo); err != nil {
+		return err
 	}
 
 	todos = append(todos, newTodo)
-
-	context.IndentedJSON(http.StatusCreated, newTodo)
-}
-
-func getTodo(context *gin.Context) {
-	id := context.Param("id")
-	todo, err := getTodoById(id)
-
-	if err != nil {
-		context.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
-		return
-	}
-
-	context.IndentedJSON(http.StatusOK, todo)
+	return context.Status(fiber.StatusCreated).JSON(newTodo)
 }
 
 func getTodoById(id string) (*todo, error) {
@@ -52,29 +38,39 @@ func getTodoById(id string) (*todo, error) {
 			return &todos[i], nil
 		}
 	}
-
 	return nil, errors.New("todo not found")
 }
 
-func toggleTodoStatus(context *gin.Context) {
-	id := context.Param("id")
+func getTodo(context *fiber.Ctx) error {
+	id := context.Params("id")
 	todo, err := getTodoById(id)
 
 	if err != nil {
-		context.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
-		return
+		return context.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": err.Error()})
+	}
+
+	return context.JSON(todo)
+}
+
+func toggleTodoStatus(context *fiber.Ctx) error {
+	id := context.Params("id")
+	todo, err := getTodoById(id)
+
+	if err != nil {
+		return context.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": err.Error()})
 	}
 
 	todo.Complated = !todo.Complated
-
-	context.IndentedJSON(http.StatusOK, todo)
+	return context.JSON(todo)
 }
 
 func main() {
-	router := gin.Default()
-	router.GET("/todos", getTodos)
-	router.GET("/todos/:id", getTodo)
-	router.POST("/todos", addTodo)
-	router.PATCH("/todos/:id", toggleTodoStatus)
-	router.Run("localhost:4000")
+	app := fiber.New()
+
+	app.Get("/todos", getTodos)
+	app.Get("/todos/:id", getTodo)
+	app.Post("/todos", addTodo)
+	app.Patch("/todos/:id", toggleTodoStatus)
+
+	app.Listen(":4000")
 }
