@@ -1,22 +1,21 @@
 package main
 
 import (
-	"gofirst/controllers"
+	todoController "gofirst/controllers/todo"
 	"gofirst/database"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// main.go
 func main() {
 	app := fiber.New()
 
 	database.InitDatabase()
 
-	app.Get("/todos", controllers.GetTodos)
-	app.Get("/todos/:id", controllers.GetTodo)
-	app.Post("/todos", controllers.AddTodo)
-	app.Patch("/todos/:id", controllers.ToggleTodoStatus)
+	app.Get("/todos", todoController.GetTodos)
+	app.Get("/todos/:id", todoController.GetTodo)
+	app.Post("/todos", todoController.AddTodo)
+	app.Patch("/todos/:id", todoController.ToggleTodoStatus)
 
 	app.Listen(":4000")
 }
