@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"errors"
 
 	// Aşağıdaki gibi importlara isim atayabiliyoruz:
 	database "gofirst/database"
 	models "gofirst/models"
+	repositories "gofirst/repositories"
 
 	validator "github.com/go-playground/validator"
 	fiber "github.com/gofiber/fiber/v2"
@@ -35,19 +35,9 @@ func AddTodo(context *fiber.Ctx) error {
 	return context.Status(fiber.StatusCreated).JSON(newTodo)
 }
 
-// repo olmalı:
-func GetTodoById(id string) (*models.Todo, error) {
-	var todo models.Todo
-	result := database.DB.First(&todo, "id = ?", id)
-	if result.Error != nil {
-		return nil, errors.New("todo not found")
-	}
-	return &todo, nil
-}
-
 func GetTodo(context *fiber.Ctx) error {
 	id := context.Params("id")
-	todo, err := GetTodoById(id)
+	todo, err := repositories.GetTodoById(id)
 	if err != nil {
 		return context.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": err.Error()})
 	}
@@ -56,7 +46,7 @@ func GetTodo(context *fiber.Ctx) error {
 
 func ToggleTodoStatus(context *fiber.Ctx) error {
 	id := context.Params("id")
-	todo, err := GetTodoById(id)
+	todo, err := repositories.GetTodoById(id)
 
 	if err != nil {
 		return context.Status(fiber.StatusNotFound).JSON(
